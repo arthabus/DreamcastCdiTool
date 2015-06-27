@@ -66,8 +66,13 @@ by all the information I was able to find on the web regarding creating backups 
 # Tools Used
 
 cdirip - ftp://ftp.cs.tu-berlin.de/pub/aminet/disk/cdrom/cdirip-0.6.3.readme
+
 isofix - https://github.com/DeadlySystem/isofix
+
 7z - http://www.7-zip.org/
+
 binhack32 - http://sourceforge.net/projects/binhack32/
+
 mkisofs - https://en.wikipedia.org/wiki/Cdrtools
+
 cdi4dc - https://github.com/DC-SWAT/DreamShell/tree/master/sdk/bin/src/img4dc/cdi4dc
