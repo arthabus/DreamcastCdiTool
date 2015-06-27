@@ -28,8 +28,8 @@ After selecting a CDI image you Alcohol will sho sessions and tracks from disc. 
 
 Alcohol Settings for burning a dics:
 
-1. Write Speed - minimal possible (in my case 10x fas fine)
-2. Write mode: RAW DAO. Hardware dependent. If you can't set this mode you'd find another CD/DVD drive to burn a CD-R backup.
+1. Write Speed - minimal possible (in my case 10x was fine)
+2. Write mode: RAW DAO. Hardware dependent. If you can't set this mode you should find another CD/DVD drive to burn a CD-R backup.
 3. Remove tick from "Enable Buffer Underrun Technology" option
 
 
