@@ -18,6 +18,21 @@ To create compilation disc with multiple games start launcher.bat file. When CDI
 When creation finished the CDI image will contain the games picked before as well as selection menu to select the game from the list. Every game will be presented with the image and the name picked previously.
 
 
+# Burning
+
+Note. Test the final CDI image with Dreamcast emulator. If it can't boot a game (or ony game from multi game disc) it's very likely that the game won't boot with you Dreamcast as well unless emulator couldn't play the original CDI.
+
+Alcohol 120 works good to burn Data-Data CDI images for furhter use with Dreamcast console.
+
+After selecting a CDI image you Alcohol will sho sessions and tracks from disc. If it's in Data/Data it should contain only 2 sessions with 1 track each - session 1 track 1 is a big one (actual game data) and session 2 track 2 - a small one.
+
+Alcohol Settings for burning a dics:
+
+1. Write Speed - minimal possible (in my case 10x fas fine)
+2. Write mode: RAW DAO. Hardware dependent. If you can't set this mode you'd find another CD/DVD drive to burn a CD-R backup.
+3. Remove tick from "Enable Buffer Underrun Technology" option
+
+
 # Additional flags
 
 Main launcher.bat script accepts the next launch flags:
@@ -47,3 +62,12 @@ If the initially provided image is in Data-Data format it will be skipped. Also 
 # Inspired 
 
 by all the information I was able to find on the web regarding creating backups CD-Rs for Dreamcast. Just wanted to gather everything in one place and to provide an easy and user-friendly way for using the tools.
+
+# Tools Used
+
+cdirip - ftp://ftp.cs.tu-berlin.de/pub/aminet/disk/cdrom/cdirip-0.6.3.readme
+isofix - https://github.com/DeadlySystem/isofix
+7z - http://www.7-zip.org/
+binhack32 - http://sourceforge.net/projects/binhack32/
+mkisofs - https://en.wikipedia.org/wiki/Cdrtools
+cdi4dc - https://github.com/DC-SWAT/DreamShell/tree/master/sdk/bin/src/img4dc/cdi4dc
