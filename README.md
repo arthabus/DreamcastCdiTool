@@ -10,24 +10,23 @@ This tool was created to automate convertion process as well as to make it easy 
 Just launch launcher.bat script file under Windows to start the process. It will ask to pick CDI files to process.
 
 
-# Creating a compilation disc containing multiple games based on DreamOn Collection menu (or DP3 menu as an option)
+# Creating a multi game compilation disc 
 
-To create compilation disc with multiple games start launcher.bat file. When CDI pick dialog appears just select multiple files at onece using CTRL/Shift keys. 
+To create compilation disc launch the script and just pick several CDI files from the dialog using CTRL/Shift buttons.
 
 Almost done. 
 
-While processing the CDI files the script will ask to enter a display name for every game selected (or just press Enter to use CDI file's name) as well as cover image to display in selection menu (or use "-silet" flag to skip both inputs)
+While processing the CDI files the script will ask to enter a display name for every game selected (or just press Enter to use CDI file's name) as well as a cover image to display in selection menu (or use "-silet" flag to skip both inputs)
 
-When creation finished the CDI image will contain the games picked before as well as selection menu to select the game from the list. Every game will be presented with the image and the name picked previously.
-
+All the games will be presented withing DreamOn Collection menu by default with the names and the images picked previously. It's possible to use a simple DP3 menu which sometimes works better for some games. Use -dp3 launch flag for this.
 
 # Burning
 
 Note. Test the final CDI image with Dreamcast emulator. If it can't boot a game (or ony game from multi game disc) it's very likely that the game won't boot with you Dreamcast as well unless emulator couldn't play the original CDI.
 
-Alcohol 120 works good to burn Data-Data CDI images for furhter use with Dreamcast console.
+Alcohol 120 works smooth to burn Data-Data CDI images for furhter use with Dreamcast console.
 
-After selecting a CDI image you Alcohol will sho sessions and tracks from disc. If it's in Data/Data it should contain only 2 sessions with 1 track each - session 1 track 1 is a big one (actual game data) and session 2 track 2 - a small one.
+After selecting a CDI image Alcohol will show sessions and tracks from the image. If it's in Data/Data it should contain only 2 sessions with 1 track each - "session 1 track 1" is a big one (actual game data) and "session 2 track 2" - a small one.
 
 Alcohol Settings for burning a dics:
 
