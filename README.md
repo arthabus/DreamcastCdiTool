@@ -39,15 +39,15 @@ Alcohol Settings for burning a dics:
 
 Main launcher.bat script accepts the next launch flags:
 
--dest       Choose destination folder for extracting and creating final CDI image.
+<b>-dest</b>       Choose destination folder for extracting and creating final CDI image.
 
--modify     Allows modification of extracted folder before creating final CDI image. Useful if the original image contains dummy files to preserve space.
+<b>-modify</b>     Allows modification of extracted folder before creating final CDI image. Useful if the original image contains dummy files to preserve space.
 
--silent     Used in compilation disc image only. Flag for skipping custom display name for games and image cover dialog.
+<b>-silent</b>     Used in compilation disc image only. Flag for skipping custom display name for games and image cover dialog.
 
--keep       Flag for preserving all intermediate files.
+<b>-keep</b>      Flag for preserving all intermediate files.
 
--dp3        Use DP3 menu as boot menu instead of DreamOn Collection boot menu. Sometimes DreamOn boot menu can't load a game properly. Sometimes DP3 boot menu can help in these cases.
+<b>-dp3</b>       Use DP3 menu as boot menu instead of DreamOn Collection boot menu. Sometimes DreamOn boot menu can't load a game properly. Sometimes DP3 boot menu can help in these cases.
 
 
 # Important
@@ -80,5 +80,3 @@ binhack32 - http://sourceforge.net/projects/binhack32/
 mkisofs - https://en.wikipedia.org/wiki/Cdrtools
 
 cdi4dc - https://github.com/DC-SWAT/DreamShell/tree/master/sdk/bin/src/img4dc/cdi4dc
-=======
-Tool for preparing CDI images for burning to CD-R. Allows easy creation of multi game compilation images based on DreamOn menu by default or using DP3 browser as an option.
