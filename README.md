@@ -1,6 +1,6 @@
 # DreamcastCdiTool
 
-Dreamcast tool for preparing CDI images for burning to CD-R. Allows easy creation of multi game compilation images based on DreamOn menu by default or using DP3 browser as an option.
+To make Dreamcast read any game from CD-R backup flawlessly it worth to convert CDI file from Audio/Data to Data/Data format. Also it’s possible to create a compilation disc containing multiple games to preserve CD-R discs. In order to be able to create compilation disc initial CDIs must be in Audio-Data format.
 
 This tool was created to automate convertion process as well as to make it easy to crete compilation discs containing several games.
 
@@ -10,9 +10,13 @@ This tool was created to automate convertion process as well as to make it easy 
 Just launch launcher.bat script file under Windows to start the process. It will ask to pick CDI files to process.
 
 
-# Creating a compilation disc containing multiple games
+# Creating a compilation disc containing multiple games based on DreamOn Collection menu (or DP3 menu as an option)
 
-To create compilation disc with multiple games start launcher.bat file. When CDI pick dialog appears just select multiple files at onece using CTRL/Shift keys. Almost done. During processing the CDI files the script will ask to enter a display name for every game selected (or just press Enter to use CDI file's name) as well as cover image to display in selection menu (or use -silet flag to skip both inputs)
+To create compilation disc with multiple games start launcher.bat file. When CDI pick dialog appears just select multiple files at onece using CTRL/Shift keys. 
+
+Almost done. 
+
+While processing the CDI files the script will ask to enter a display name for every game selected (or just press Enter to use CDI file's name) as well as cover image to display in selection menu (or use "-silet" flag to skip both inputs)
 
 When creation finished the CDI image will contain the games picked before as well as selection menu to select the game from the list. Every game will be presented with the image and the name picked previously.
 
@@ -43,6 +47,8 @@ Main launcher.bat script accepts the next launch flags:
 -silent     Used in compilation disc image only. Flag for skipping custom display name for games and image cover dialog.
 
 -keep       Flag for preserving all intermediate files.
+
+-dp3        Use DP3 menu as boot menu instead of DreamOn Collection boot menu. Sometimes DreamOn boot menu can't load a game properly. Sometimes DP3 boot menu can help in these cases.
 
 
 # Important
