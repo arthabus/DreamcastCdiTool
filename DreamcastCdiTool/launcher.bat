@@ -1,15 +1,22 @@
 @ECHO off
 setlocal enabledelayedexpansion
 
-SET manualModification=disabled
-SET keepFiles=false
+set currentVersion=1.5
+
+set manualModification=disabled
+set keepFiles=false
 set pickDestinationFolder=false
 set silent=false
+
+set dreamOnBootMenu=DreamOn2
+set dp3BootMenu=DP3
+
+set bootMenu=!dreamOnBootMenu!
+
 
 set gameFolderPostfix=GameFolderDreamcast
 set gameWorkingDir=%~dp0%gameFolderPostfix%
 
-set version=1.0
 
 ::read input params
 :loop_param_main
@@ -29,17 +36,28 @@ IF NOT "%1"=="" (
 	    call :pick_dialog -folder -title "Pick output folder"
 		if defined fileNameList set gameWorkingDir=!fileNameList!\%gameFolderPostfix%
     )
+
+	if "%1"=="-dp3" ( 
+		set bootMenu=!dp3BootMenu!
+    )
+	
     SHIFT
     GOTO :loop_param_main 
 )
 
-echo version=%version%
+echo version %currentVersion%
+echo.
+echo Tool for preparing CDI images for burning to CD-R. Allows easy creation of multi game compilation images based on DreamOn menu by default or using DP3 browser as an option.
+echo.
 echo gameWorkingDir=!gameWorkingDir!
 echo.
 echo -modify=%manualModification% (allows modification of extracted folder before creating final CDI image)
 echo -keep=%keepFiles% (flag for preserving all intermediate files)
 echo -silent=%silent% (multi game disc only. flag for skipping custom display name for games and image cobver dialog)
 echo -dest=%pickDestinationFolder% (choose destination folder for extracting and creating final CDI image)
+
+echo boot menu=!bootMenu! (Use -dp3 flag to use DP3 boot menu (may work with some games while DreamOn fails))
+
 
 call :pick_dialog -multiselect -filter "CDI Files (*.cdi)|*.cdi|All Files (*.*)|*.*" -title "Open game images (Ctrl/Shift for multiple selection)" 
 
@@ -61,7 +79,11 @@ if %filecount%==1 (
 
 	)
 ) else ( 
+	::extract boot menu
+	7z x -y !bootMenu!.zip >nul
 	call :multiple_cdi_to_data_data_folder "!fileNameList!"
+	::clean up boot menu folder
+	if exist !bootMenu!.zip call :delete_folder !bootMenu!
 )
 
 	
@@ -189,9 +211,15 @@ for /f "tokens=1-2 delims=/:" %%a in ("%TIME%") do (set currentTime=%%a%%b)
 		set "gameWorkingDir=%gameWorkingDir%\%compilationFolder%"
 		set workDirMulti="%gameWorkingDir%\%compilationFolder%"
 		call :delete_folder '%workDirMulti%'
-		xcopy /e /s /y /i BootMenu %workDirMulti%
+		
+		echo Unzipping !bootMenu!.zip
+::		7z x -y -o!workDirMulti! !bootMenu!.zip >nul
+		xcopy /e /s /y /i !bootMenu! %workDirMulti%
+		::call :delete_folder '!bootMenu!'
 		set "multiGameFileName="
 		set "parseGameNameResult="
+		::if !bootMenu!==!dreamOnBootMenu! set parseGameNameResult=DreamOn_
+		if !bootMenu!==!dp3BootMenu! set parseGameNameResult=DP3_
 		for %%i in (%filenamelist:;=","%) do (
 		set filePath=%%i
 			call :cdi_to_data_data_folder !filePath!
@@ -226,7 +254,8 @@ for /f "tokens=1-2 delims=/:" %%a in ("%TIME%") do (set currentTime=%%a%%b)
 				::prepare cover image
 				set gameImageNameSrc=!displayGameName!
 				echo gameImageNameSrc=!gameImageNameSrc!
-				set gameImageDst=img/!index!.jpg
+				set gameImageDst=!index!
+				set gameImageFile=!index!.pvr
 				set gameImageName=""
 				echo Default cover image path = .\!gameImageNameSrc!.jpg
 				if exist !gameImageNameSrc!.jpg (
@@ -242,46 +271,98 @@ for /f "tokens=1-2 delims=/:" %%a in ("%TIME%") do (set currentTime=%%a%%b)
 				if not exist !gameImageName! ( 
 					echo picking image 
 					set "imageFilter=Image (*.jpg, *.jpeg, *.png, *.gif)|*.jpg;*.jpeg;*.png;*.gif|All Files (*.*)|*.*"
-					call :pick_dialog -filter "!imageFilter!" -title "Pick cover image for !displayGameName!"
+					call :pick_dialog -filter "!imageFilter!" -title "Pick cover image for '!displayGameName:_= !'"
 					if defined fileNameList set gameImageName="!fileNameList!"
 				 )
 				 )
 				echo gameImageName=!gameImageName!
-				if exist !gameImageName! ( convert !gameImageName! -resize 200x200 -gravity center -extent 200x200 !workDirMulti!/DPWWW/!gameImageDst!
-				 ) else ( 
-					echo No cover image found
+				
+				call :parse_game_name "!displayGameName!"
+				
+				if !bootMenu!==!dreamOnBootMenu! ( 
+					set gameImageDst=!gameImageDst!.bmp
+					if exist !gameImageName! ( 
+						convert !gameImageName! -resize 256x256 -gravity center -extent 256x256 BMP3:!workDirMulti!/!gameImageDst!
+					 ) else ( 
+						copy !workDirMulti!\game_logo.bmp !workDirMulti!\!gameImageDst!
+						echo No cover image found. Use default image
+					 )
+					 ::convert bmp image into pvr
+					set /a globalIndexPvr=42+!index!
+					pvrconv -gi !globalIndexPvr! !workDirMulti!\!gameImageDst!
+					del !workDirMulti!\!gameImageDst!
+					 
+					 
+					set gameConfigFile=!gameFolderDst!.cfg
+					 
+					echo "!displayGameName:_= !" : GAME,"!gameConfigFile!","!gameImageFile!",AUTO>>!workDirMulti!/MENU.cfg
+
+					echo LAUNCH > !workDirMulti!/!gameConfigFile!
+					echo PATH "!gameFolderDst!" >> !workDirMulti!/!gameConfigFile!
+					echo EXEC "\!gameFolderDst!\!bootFile!" >> !workDirMulti!/!gameConfigFile!
+					echo GDDA 7 >> !workDirMulti!/!gameConfigFile!
+					echo LAUNCH_END >> !workDirMulti!/!gameConfigFile!
+					echo.>> !workDirMulti!/!gameConfigFile!
+					echo PRODUCT_INFO ENG>> !workDirMulti!/!gameConfigFile!
+					echo "!displayGameName:_= !">> !workDirMulti!/!gameConfigFile!
+					echo END_PRODUCT_INFO>> !workDirMulti!/!gameConfigFile!
+					echo.>> !workDirMulti!/!gameConfigFile!
+					echo CONTROLLER ENG >> !workDirMulti!/!gameConfigFile!
+					echo DIR "Digital Pad" >> !workDirMulti!/!gameConfigFile!
+					echo ANA "Analog Pad" >> !workDirMulti!/!gameConfigFile!
+					echo TL "Left Trigger" >> !workDirMulti!/!gameConfigFile!
+					echo TR "Right Trigger" >> !workDirMulti!/!gameConfigFile!
+					echo KA "Key A" >> !workDirMulti!/!gameConfigFile!
+					echo KB "Key B" >> !workDirMulti!/!gameConfigFile!
+					echo KX "Key X" >> !workDirMulti!/!gameConfigFile!
+					echo KY "Key Y" >> !workDirMulti!/!gameConfigFile!
+					echo ST "Start Button" >> !workDirMulti!/!gameConfigFile!
+					echo END_CONTROLLER >> !workDirMulti!/!gameConfigFile!
+				
 				 )
 				 
-				 
-				 call :parse_game_name "!displayGameName!"
+				if !bootMenu!==!dp3BootMenu! ( 
+					set gameImageDst=!gameImageDst!.jpg
+					if not exist !gameImageName! ( 
+						set gameImageName=!workDirMulti!\game_logo.bmp
+						echo No cover image found. Using default
+					 )
+					convert !gameImageName! -resize 200x200 -gravity center -extent 200x200 !workDirMulti!/DPWWW/IMG/!gameImageDst!
+					::update content of DP3.ini file 
+					echo.>> !workDirMulti!/DP3.ini
+					echo [Launcher!index!] >> !workDirMulti!/DP3.ini
+					echo AppUrl='http://www.dreamcastcn.com'  >> !workDirMulti!/DP3.ini
+					echo AppDir='!gameFolderDst!'  >> !workDirMulti!/DP3.ini
+					echo AppName='!bootFile!'  >> !workDirMulti!/DP3.ini
+					echo AppOS=0  >> !workDirMulti!/DP3.ini
+					echo AppDA=3  >> !workDirMulti!/DP3.ini
+					echo 
 
-				 echo parseGameNameResult=!parseGameNameResult!
-
-				 ::update content of DP3.ini file 
-				echo.>> !workDirMulti!/DP3.ini
-				echo [Launcher!index!] >> !workDirMulti!/DP3.ini
-				echo AppUrl='http://www.dreamcastcn.com'  >> !workDirMulti!/DP3.ini
-				echo AppDir='!gameFolderDst!'  >> !workDirMulti!/DP3.ini
-				echo AppName='!bootFile!'  >> !workDirMulti!/DP3.ini
-				echo AppOS=0  >> !workDirMulti!/DP3.ini
-				echo AppDA=3  >> !workDirMulti!/DP3.ini
-				echo 
-
-				::update content of DPWWW/INDEX.HTM file
-				echo ^<p^>^<a href="x-avefront://---.dream/proc/launch/!index!"^>^<img border="0" src="!gameImageDst!" width="200" height="200" align="middle"/^>^<br/^>!displayGameName!^</a^>^</p^>^</br^>^</br^>  >> !workDirMulti!/DPWWW/INDEX.HTM
+					::update content of DPWWW/INDEX.HTM file
+					echo ^<p^>^<a href="x-avefront://---.dream/proc/launch/!index!"^>^<img border="0" src="IMG/!gameImageDst!" width="200" height="200" align="middle"/^>^<br/^>!displayGameName!^</a^>^</p^>^</br^>^</br^>  >> !workDirMulti!/DPWWW/INDEX.HTM
+				  )
 
 			 )
 			
 		)
 	
-		echo. >> %workDirMulti%/DP3.ini
-		echo [Game_ID] >> %workDirMulti%/DP3.ini
-		echo. >> %workDirMulti%/DP3.ini
-		echo XGame_ID='610-9999' >> %workDirMulti%/DP3.ini
-		echo XGame_Ver='V0.999' >> %workDirMulti%/DP3.ini
+		if !bootMenu!==!dreamOnBootMenu! ( 
+			echo END_PRODUCT_LIST>>!workDirMulti!/MENU.cfg
+		 )
 
-		::finalize DPWWW/INDEX.HTM file
-		echo ^</center^>^</div^>^</body^>^</html^> >> !workDirMulti!/DPWWW/INDEX.HTM
+
+		if !bootMenu!==!dp3BootMenu! ( 
+			echo. >> %workDirMulti%/DP3.ini
+			echo [Game_ID] >> %workDirMulti%/DP3.ini
+			echo. >> %workDirMulti%/DP3.ini
+			echo XGame_ID='610-9999' >> %workDirMulti%/DP3.ini
+			echo XGame_Ver='V0.999' >> %workDirMulti%/DP3.ini
+
+			::finalize DPWWW/INDEX.HTM file
+			echo ^</center^>^</div^>^</body^>^</html^> >> !workDirMulti!/DPWWW/INDEX.HTM
+		  )
+
+
 		set volumeName=%compilationFolder%
 		set gameName=%parseGameNameResult%
 		set gameFolder=%gameWorkingDir%
@@ -297,7 +378,6 @@ set "val=_"
 exit /b
 
 :parse_game_name_internal
-echo parse_game_name: "%~1"
 for /f "tokens=1* delims=_-:;," %%i in ("%~1") do ( 
 set val=%%i
 set val=!val:~0,1!
@@ -380,28 +460,32 @@ echo %lba%
 )|"%launchDir%\isofix"
 
 set archiveForExtraction=fixed.iso
+if not exist !archiveForExtraction! set archiveForExtraction=!isoFileName!
 
-::delete unnecessary files
-if "%keepFiles%"=="false" del %isoFileName%
-if "%keepFiles%"=="false" del *.wav
-if "%keepFiles%"=="false" del *.cue
 
 ::extracting iso content
 set extractedFolder=%gameName%
 echo Extracting %archiveForExtraction% to plain folder... Please wait...
-"%launchDir%\7z" x -y -o%extractedFolder% %archiveForExtraction% >nul
+"%launchDir%\7z" x -y -o%extractedFolder% %archiveForExtraction%
 ::"%launchDir%\piso" extract %archiveForExtraction% / -od %extractedFolder%
 
 ::delete unnecessary files
-if "%keepFiles%"=="false" del %archiveForExtraction%
-if "%keepFiles%"=="false" del header.iso
+if "%keepFiles%"=="false" ( 
+	del %isoFileName%
+	del *.wav
+	del *.cue
+	del %archiveForExtraction%
+	del header.iso
+ )
 
+::set /p WAIT=Extracted. Press ENTER...
 
 set bootFile=""
 
 if exist %extractedFolder%\0.000 set bootFile=0.000
 if exist %extractedFolder%\1ST_READ.BIN set bootFile=1ST_READ.BIN
 if exist %extractedFolder%\0WINCEOS.BIN set bootFile=0WINCEOS.BIN
+::if exist %extractedFolder%\1GUTH.BIN set bootFile=1GUTH.BIN
  
 if %bootFile%=="" ( 
 	echo Can't locate boot file ^(1ST_READ.BIN or 0WINCEOS.BIN^). Please pick boot file manually

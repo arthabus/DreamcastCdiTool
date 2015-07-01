@@ -1,7 +1,6 @@
 # DreamcastCdiTool
 
-To make Dreamcast read any game from CD-R backup flawlessly it worth to convert CDI file from Audio/Data format to Data/Data format (if not yet).
-Also it’s possible to create a compilation disc containing multiple games to preserve CD-R discs. In order to be able to create compilation disc initial CDIs must be in Audio-Data format.
+Dreamcast tool for preparing CDI images for burning to CD-R. Allows easy creation of multi game compilation images based on DreamOn menu by default or using DP3 browser as an option.
 
 This tool was created to automate convertion process as well as to make it easy to crete compilation discs containing several games.
 
@@ -76,3 +75,5 @@ binhack32 - http://sourceforge.net/projects/binhack32/
 mkisofs - https://en.wikipedia.org/wiki/Cdrtools
 
 cdi4dc - https://github.com/DC-SWAT/DreamShell/tree/master/sdk/bin/src/img4dc/cdi4dc
+=======
+Tool for preparing CDI images for burning to CD-R. Allows easy creation of multi game compilation images based on DreamOn menu by default or using DP3 browser as an option.
