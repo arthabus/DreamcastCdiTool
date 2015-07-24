@@ -1,5 +1,7 @@
 # DreamcastCdiTool
 
+![dreamon1](https://cloud.githubusercontent.com/assets/8145834/8882599/e246bdfa-3250-11e5-91a4-7724e474077b.png)
+
 To make Dreamcast read any game from CD-R backup flawlessly it worth to convert CDI file from Audio/Data to Data/Data format. Also it’s possible to create a compilation disc containing multiple games to preserve CD-R discs. In order to be able to create compilation disc initial CDIs must be in Audio-Data format.
 
 This tool was created to automate convertion process as well as to make it easy to crete compilation discs containing several games.
@@ -19,6 +21,21 @@ Almost done.
 While processing the CDI files the script will ask to enter a display name for every game selected (or just press Enter to use CDI file's name) as well as a cover image to display in selection menu (or use "-silet" flag to skip both inputs)
 
 All the games will be presented withing DreamOn Collection menu by default with the names and the images picked previously. It's possible to use a simple DP3 menu which sometimes works better for some games. Use -dp3 launch flag for this.
+
+# Multi game compilation disc loading issue
+
+If some games doesn't boot within DreamOn boot menu (always check it on emulator before burning to CD-R) but still they loads fine as standalone game (converted to Data/Data) the following should do the trick:
+
+Launch launcher.bat with -relocate flag:
+
+> launcher -relocate
+
+And answer yes (y) for evetry game which doesn't boot when prompted with a question like "Put !gameName! to the root?". 
+Answer No (n) for games which boots fine within DreamOn boot menu.
+
+Loading issues happens because while creating multi game disk every game is placed to its own folder so no files with the same name overlaps. However some games requires to be in the root to load properly (for example all WinCE games). -relocate flag gives a way to cheoose for every specific game if it should be placed in separate folder or in the root.
+
+WARNING: while placing several games in the root some files may overlap - they will be displayed in the scrip's output window. Test such games carefully on emulator. Consider using differnet set of games if files overlapped and any of the game doesn't boot.
 
 # Burning
 
