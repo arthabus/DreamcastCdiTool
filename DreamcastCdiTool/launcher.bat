@@ -7,6 +7,7 @@ set manualModification=disabled
 set keepFiles=false
 set pickDestinationFolder=false
 set silent=false
+set relocateGames=false
 
 set dreamOnBootMenu=DreamOn2
 set dp3BootMenu=DP3
@@ -40,6 +41,10 @@ IF NOT "%1"=="" (
 	if "%1"=="-dp3" ( 
 		set bootMenu=!dp3BootMenu!
     )
+
+	if "%1"=="-relocate" ( 
+		set relocateGames=true
+    )
 	
     SHIFT
     GOTO :loop_param_main 
@@ -47,7 +52,7 @@ IF NOT "%1"=="" (
 
 echo version %currentVersion%
 echo.
-echo Tool for preparing CDI images for burning to CD-R. Allows easy creation of multi game compilation images based on DreamOn menu by default or using DP3 browser as an option.
+echo Tool for preparing CDI images for burning to CD-R. Allows easy creation of multi game compilation images based on Dreamon menu by default or using DP3 browser as an option.
 echo.
 echo gameWorkingDir=!gameWorkingDir!
 echo.
@@ -55,6 +60,7 @@ echo -modify=%manualModification% (allows modification of extracted folder befor
 echo -keep=%keepFiles% (flag for preserving all intermediate files)
 echo -silent=%silent% (multi game disc only. flag for skipping custom display name for games and image cobver dialog)
 echo -dest=%pickDestinationFolder% (choose destination folder for extracting and creating final CDI image)
+echo -relocate=%relocateGames% (multi game disc only. Flag for manual input if game's files should be placed to root directory instead of it's own folder. Some games can be loaded only from root folder however there is a chance for files to collide by names which may lead to unstable game)
 
 echo boot menu=!bootMenu! (Use -dp3 flag to use DP3 boot menu (may work with some games while DreamOn fails))
 
@@ -212,16 +218,19 @@ for /f "tokens=1-2 delims=/:" %%a in ("%TIME%") do (set currentTime=%%a%%b)
 		set workDirMulti="%gameWorkingDir%\%compilationFolder%"
 		call :delete_folder '%workDirMulti%'
 		
+		
 		echo Unzipping !bootMenu!.zip
 ::		7z x -y -o!workDirMulti! !bootMenu!.zip >nul
-		xcopy /e /s /y /i !bootMenu! %workDirMulti%
+		::xcopy /e /s /y /i !bootMenu! %workDirMulti%
+		robocopy /e !bootMenu! %workDirMulti%
 		::call :delete_folder '!bootMenu!'
 		set "multiGameFileName="
 		set "parseGameNameResult="
 		::if !bootMenu!==!dreamOnBootMenu! set parseGameNameResult=DreamOn_
 		if !bootMenu!==!dp3BootMenu! set parseGameNameResult=DP3_
 		for %%i in (%filenamelist:;=","%) do (
-		set filePath=%%i
+			set filePath=%%i
+			set relocateGameToRoot=false
 			call :cdi_to_data_data_folder !filePath!
 			if "!initialFileFormat!"=="Data-Data" (
 				echo Game is in Data-Data format. Only images in Audio-Data format suitable for compilation multi game disc. Skipping !extractedFolder! game...
@@ -234,15 +243,68 @@ for /f "tokens=1-2 delims=/:" %%a in ("%TIME%") do (set currentTime=%%a%%b)
 				::Index as prefex will ensure all games have unique name. 
 				set gameFolderDst=!index!_!extractedFolder:~0,8!
 				set gameFolderDst=!gameFolderDst:-=_!
-				set srcOrigin="!gameFolder!\!extractedFolder!"
+				set gameConfigFile=!gameFolderDst!.cfg
+				set srcOrigin=!gameFolder!\!extractedFolder!
+				set gameFolderDstChangable=\!gameFolderDst!
+
+				::Some games works only from root dir. DP3 browser doesn't support this feature
+				if !bootFile!==0WINCEOS.BIN ( 
+					echo.
+					echo !gameName! is WinCE game. It may work only from the root folder of a disc.
+					echo Force move the game to the root folder.
+					echo.
+					set relocateGameToRoot=true
+				 ) else ( 
+					::ask user where to put the game (root or separate dir)
+					if !relocateGames!==true (
+						set putToRoot=n
+						echo.
+						echo Enter 'y' ^(no quotes^) to put !gameName!'s files under the root folder. Otherwise it will be put to it's own folder
+						echo.
+						set /p putToRoot=Put !gameName! to the root? ^(y/n^):
+						if defined putToRoot if !putToRoot!==y set relocateGameToRoot=true
+					)
+				 )
+				
+
+				if !relocateGameToRoot!==true ( 
+					set "gameFolderDstChangable="
+					set oldBootFile=!bootFile!
+					set bootFile=!index!_!bootFile!
+					echo !srcOrigin!\!oldBootFile!
+					echo !srcOrigin!\!bootFile!
+					ren "!srcOrigin!\!oldBootFile!" "!bootFile!"
+					del "!srcOrigin!\0GDTEX.PVR"
+					del "!srcOrigin!\IP.BIN"
+				 )
 				set src="!gameFolder!\!gameFolderDst!"
-				set dst=!workDirMulti!
+				set dst="!workDirMulti:"=!!gameFolderDstChangable!"
 				echo srcOrigin=!srcOrigin!
 				echo src=!src!
 				echo dst=!dst!
 				echo gameFolder=!gameFolder!
-				ren !srcOrigin! !gameFolderDst!
-				move !src! !dst!
+				ren "!srcOrigin!" "!gameFolderDst!"
+				::move !src! !dst!
+				::robocopy /MIR /W:3 /R:100 /NS /NFL /NP /v /xc /xn /xo !src! !dst! 
+				set logFile=tmp.log
+				echo Copying files... Please wait...
+				robocopy /v /w:3 /r:100 /xc /xn /xo /e !src! !dst! > !logFile!
+				if !relocateGameToRoot!==true ( 
+					echo Skipped files:
+					type !logFile!|findstr /C:"newer	"
+					type !logFile!|findstr /C:"older	"
+					type !logFile!|findstr /C:"modified	"
+					echo ---------------------------------------------------
+					type !logFile!|findstr /C:"Total"
+					type !logFile!|findstr /C:" Dirs :"
+					type !logFile!|findstr /C:" Files :"|findstr /v /C:"Files : *.*"
+					echo.
+					echo If there are skipped files game may work incorrectly. Check every game in this final image on emulator before burning it to CD-R. 
+					echo Consider using different gameset unsless the skipped file is identical with the original ones
+					echo.
+				 )
+				del !logFile!
+
 				call :delete_folder '"!gameFolder!"' >nul
 			
 				::prepare display name
@@ -293,14 +355,14 @@ for /f "tokens=1-2 delims=/:" %%a in ("%TIME%") do (set currentTime=%%a%%b)
 					del !workDirMulti!\!gameImageDst!
 					 
 					 
-					set gameConfigFile=!gameFolderDst!.cfg
+					
 					 
 					echo "!displayGameName:_= !" : GAME,"!gameConfigFile!","!gameImageFile!",AUTO>>!workDirMulti!/MENU.cfg
 
 					echo LAUNCH > !workDirMulti!/!gameConfigFile!
-					echo PATH "!gameFolderDst!" >> !workDirMulti!/!gameConfigFile!
-					echo EXEC "\!gameFolderDst!\!bootFile!" >> !workDirMulti!/!gameConfigFile!
-					echo GDDA 7 >> !workDirMulti!/!gameConfigFile!
+					echo PATH "!gameFolderDstChangable!" >> !workDirMulti!/!gameConfigFile!
+					echo EXEC "!gameFolderDstChangable!\!bootFile!" >> !workDirMulti!/!gameConfigFile!
+					::echo GDDA 7 >> !workDirMulti!/!gameConfigFile!
 					echo LAUNCH_END >> !workDirMulti!/!gameConfigFile!
 					echo.>> !workDirMulti!/!gameConfigFile!
 					echo PRODUCT_INFO ENG>> !workDirMulti!/!gameConfigFile!
@@ -332,7 +394,7 @@ for /f "tokens=1-2 delims=/:" %%a in ("%TIME%") do (set currentTime=%%a%%b)
 					echo.>> !workDirMulti!/DP3.ini
 					echo [Launcher!index!] >> !workDirMulti!/DP3.ini
 					echo AppUrl='http://www.dreamcastcn.com'  >> !workDirMulti!/DP3.ini
-					echo AppDir='!gameFolderDst!'  >> !workDirMulti!/DP3.ini
+					echo AppDir='!gameFolderDstChangable!'  >> !workDirMulti!/DP3.ini
 					echo AppName='!bootFile!'  >> !workDirMulti!/DP3.ini
 					echo AppOS=0  >> !workDirMulti!/DP3.ini
 					echo AppDA=3  >> !workDirMulti!/DP3.ini
@@ -397,6 +459,7 @@ set gameName=not set
 for %%i in (%filename%) do ( 
 set gameName=%%~ni
 set gameFileName=%%~nxi
+set gameFilePath=%%~dpi
 )
 
 set gameName=%gameName: =_%
@@ -413,7 +476,6 @@ set launchDir=%~dp0
 set workDir=%cd%
 echo workDir=%workDir%
 
-::extracting CDI file content
 "%launchDir%"\cdirip %filename% "%workDir%"
 
 ::reading LBA value for game data file
@@ -436,7 +498,9 @@ set isoFileName=s%sessionNumber%t%trackNumber:~-2%.iso
 echo lba=%lba%
 echo isoFileName=%isoFileName%
 
+set archiveForExtraction=fixed.iso
 ::if not exist fixed.iso if exist s01t01.bin set archiveForExtraction=s01t01.bin
+
 if not exist *.iso if exist *.bin ( 
 	echo.
 	echo %gameFileName% is already in Data-Data format.
@@ -459,7 +523,6 @@ echo %isoFileName%
 echo %lba%
 )|"%launchDir%\isofix"
 
-set archiveForExtraction=fixed.iso
 if not exist !archiveForExtraction! set archiveForExtraction=!isoFileName!
 
 
@@ -482,10 +545,11 @@ if "%keepFiles%"=="false" (
 
 set bootFile=""
 
+
 if exist %extractedFolder%\0.000 set bootFile=0.000
 if exist %extractedFolder%\1ST_READ.BIN set bootFile=1ST_READ.BIN
 if exist %extractedFolder%\0WINCEOS.BIN set bootFile=0WINCEOS.BIN
-::if exist %extractedFolder%\1GUTH.BIN set bootFile=1GUTH.BIN
+if exist %extractedFolder%\1GUTH.BIN set bootFile=1GUTH.BIN
  
 if %bootFile%=="" ( 
 	echo Can't locate boot file ^(1ST_READ.BIN or 0WINCEOS.BIN^). Please pick boot file manually
@@ -500,6 +564,22 @@ if not exist bootfile.bin copy %extractedFolder%\IP.BIN
 ren bootfile.bin %bootSector%
 move %extractedFolder%\%bootFile% ".\" >nul
 
+
+::hack all possible bin files
+echo Hacking all possible BIN files...
+for /f "tokens=1* delims=\" %%A in (
+  'forfiles /p %extractedFolder% /s /m *.BIN /c "cmd /c echo @relpath"'
+) do for %%F in (^"%%B) do ( 
+set fileName=%%~F
+(
+echo .\%extractedFolder%\%%~F
+echo IP.BIN
+echo 0
+)|"%launchDir%\binhack32" >nul
+ )
+
+::hack main file
+echo Hacking main file...
 (
 echo %bootFile%
 echo %bootSector%
